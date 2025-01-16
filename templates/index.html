@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Top 10 Songs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-2.20.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Top 10 Songs Regionally</h1>
+        <div id="update-message">*Updated every day at 5:30 PM Mexico City time</div>
+    </header>
+    
+    <!-- Menu Section -->
+    <div id="menu-section">
+        <!-- Region Buttons -->
+        <div id="region-buttons">
+            {% for region in regions %}
+            <button 
+                class="region-button" 
+                data-region="{{ region }}" 
+                {% if region == "Global" %}data-default="true"{% endif %}>
+                {{ region }}
+            </button>
+            {% endfor %}
+            <button id="reset-button" class="region-button" data-region="Reset">RESET</button>
+        </div>
+    </div>
+
+    <div id="dashboard-content">
+        <!-- Side Section for Information Boxes -->
+        <div id="info-boxes">
+            <div class="info-box" id="selected-song-box">
+                <h2>Selected Song:</h2>
+                <p id="selected-song-name">None</p>
+            </div>
+            <div class="info-box" id="song-artists-box">
+                <h2>Song Artist(s):</h2>
+                <p id="song-artists">Unknown</p>
+            </div>
+            <div class="info-box" id="appearances-box">
+                <h2>Top 10 appearances in the region:</h2>
+                <p id="appearances-count">0</p>
+            </div>
+            <div class="info-box" id="popularity-box">
+                <h2>Popularity Rating:</h2>
+                <p id="popularity-value">0</p>
+            </div>
+            <div class="info-box" id="song-duration-box">
+                <h2>Song Duration:</h2>
+                <p id="song-duration">0:00</p>
+            </div>
+            <div class="info-box" id="explicit-box">
+                <h2>Explicit:</h2>
+                <p id="explicit-value">No</p>
+            </div>
+        </div>
+    
+        <!-- Main Content Section -->
+        <div class="main-content">
+            <!-- Top Row -->
+            <div class="top-row">
+                <!-- Chart Container -->
+                <div id="chart-container">
+                    <div id="top-10-chart"></div>
+                    <p id="click-song-message">*Click on song to view its details</p>
+                </div>
+                
+                <!-- Positivity Pie-Chart Container -->
+                <div id="positivity-pie-chart">
+                    <div id="pie-chart-content" style="width: 100%; height: 100%;">
+                        <!-- Mode Key donut chart will render here -->
+                    </div>
+                </div>
+                
+                <!-- Map Container -->
+                <div id="new-container">
+                    <div id="world-map">
+                        <!-- Map message -->
+                        <div id="map-message">Highlighted countries are the only ones being taken into account for the rankings.</div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Bottom Row -->
+            <div class="bottom-row">
+                <!-- Single Line Chart Container -->
+                <div id="line-chart-container">
+                    <div id="line-chart-content">
+                <!-- The single line chart will render here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to render the Mode Key Donut Chart
+        function renderModeDonutChart(modeData, songNames) {
+            const categories = {
+                "Major Key": modeData
+                    .map((mode, i) => mode >= 0.5 ? songNames[i] : null)
+                    .filter(name => name),
+                "Minor Key": modeData
+                    .map((mode, i) => mode < 0.5 ? songNames[i] : null)
+                    .filter(name => name),
+            };
+    
+            const values = [
+                categories["Major Key"].length,
+                categories["Minor Key"].length,
+            ];
+            const labels = ["Major Key", "Minor Key"];
+    
+            const hoverText = [
+                `Songs:<br>${categories["Major Key"].join('<br>') || 'None'}`,
+                `Songs:<br>${categories["Minor Key"].join('<br>') || 'None'}`,
+            ];
+    
+            const data = [{
+                values: values,
+                labels: labels,
+                type: 'pie',
+                hole: 0.4,
+                marker: {
+                    colors: ["#1DB954", "#FFFFFF"], // Spotify green for Major, White for Minor
+                },
+                textinfo: 'label+percent',
+                textposition: 'inside',
+                insidetextfont: {
+                    color: ["#FFFFFF", "#1DB954"], // White for Major, Spotify green for Minor
+                },
+                hovertemplate: '%{label}: %{value} songs<br>%{hovertext}<extra></extra>',
+                hovertext: hoverText,
+                hoverlabel: {
+                    bgcolor: ["#1DB954", "#FFFFFF"], // Background color for hover
+                    font: {
+                        color: ["#FFFFFF", "#1DB954"], // Green text for Minor hover, White for Major hover
+                    },
+                },
+            }];
+    
+            const layout = {
+                title: {
+                    text: 'Mode Key Distribution',
+                    font: { size: 20, color: "#FFFFFF" },
+                    x: 0.5, // Center horizontally
+                },
+                margin: { t: 50, l: 10, r: 10, b: 10 },
+                showlegend: true,
+                legend: {
+                    x: 1, // Bottom-right position
+                    y: 0, // Bottom alignment
+                    xanchor: 'right',
+                    yanchor: 'bottom',
+                    orientation: 'v', // Vertical legend
+                    font: {
+                        size: 12,
+                        color: '#FFFFFF', // White text for the legend
+                    },
+                    bgcolor: 'transparent', // No background
+                },
+                plot_bgcolor: "#000000",
+                paper_bgcolor: "#000000",
+                height: document.getElementById('pie-chart-content').clientHeight,
+                width: document.getElementById('pie-chart-content').clientWidth,
+            };
+    
+            Plotly.react("pie-chart-content", data, layout);
+        }
+    
+        // Function to update the Mode Key Donut Chart
+        function updateModeDonutChart(selectedRegions = []) {
+            $.ajax({
+                url: "/get_top_10_data",
+                type: "GET",
+                traditional: true,
+                data: { "region[]": selectedRegions },
+                success: function (response) {
+                    if (!response.names || response.names.length === 0) {
+                        console.error("No top 10 songs found for the selected region(s).");
+                        renderModeDonutChart([], []); // Render an empty chart
+                        return;
+                    }
+    
+                    $.ajax({
+                        url: "/get_mode_data",
+                        type: "POST",
+                        contentType: "application/json",
+                        data: JSON.stringify({ names: response.names }),
+                        success: function (modeResponse) {
+                            renderModeDonutChart(modeResponse.mode, response.names);
+                        },
+                        error: function () {
+                            console.error("Failed to fetch mode data.");
+                        },
+                    });
+                },
+                error: function () {
+                    console.error("Failed to fetch top 10 data for the selected region(s).");
+                },
+            });
+        }
+    
+        // Initialize Mode Donut Chart on page load
+        updateModeDonutChart(['Global']);
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const regionButtons = document.querySelectorAll(".region-button");
+            const resetButton = document.getElementById("reset-button");
+            const map = L.map('world-map', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([30, 0], 1.5);
+    
+            // Set map background
+            document.getElementById('world-map').style.backgroundColor = '#000';
+    
+            // Button styles
+            regionButtons.forEach(button => {
+                button.style.backgroundColor = '#000';
+                button.style.color = '#1DB954';
+                button.style.border = '2px solid #1DB954';
+                button.style.padding = '10px 20px';
+                button.style.cursor = 'pointer';
+                button.style.margin = '5px';
+                button.style.textTransform = 'uppercase';
+                button.style.transition = 'background-color 0.3s, color 0.3s';
+                button.addEventListener('mouseenter', () => {
+                    if (!button.classList.contains('active')) {
+                        button.style.backgroundColor = '#111';
+                    }
+                });
+                button.addEventListener('mouseleave', () => {
+                    if (!button.classList.contains('active')) {
+                        button.style.backgroundColor = '#000';
+                    }
+                });
+            });
+    
+            // GeoJSON for country shapes
+            const geojsonUrl = 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json';
+            let geojsonLayer;
+    
+            function updateButtonStyles() {
+                regionButtons.forEach(button => {
+                    if (button.classList.contains('active')) {
+                        button.style.backgroundColor = '#1DB954';
+                        button.style.color = '#000';
+                    } else {
+                        button.style.backgroundColor = '#000';
+                        button.style.color = '#1DB954';
+                    }
+                });
+            }
+    
+            // Highlight countries based on region selection
+            function highlightCountries(selectedRegions) {
+                $.ajax({
+                    url: "/get_countries",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ regions: selectedRegions }),
+                    success: function (response) {
+                        const countriesToHighlight = response.countries;
+    
+                        // Update GeoJSON layer with highlighting
+                        if (geojsonLayer) {
+                            map.removeLayer(geojsonLayer); // Remove existing layer
+                        }
+    
+                        fetch(geojsonUrl)
+                            .then(response => response.json())
+                            .then(data => {
+                                geojsonLayer = L.geoJSON(data, {
+                                    style: function (feature) {
+                                        return {
+                                            color: countriesToHighlight.includes(feature.properties.name) ||
+                                                countriesToHighlight.includes(feature.properties.iso_a2)
+                                                ? "#1DB954"
+                                                : "#ffffff",
+                                            weight: countriesToHighlight.includes(feature.properties.name) ||
+                                                countriesToHighlight.includes(feature.properties.iso_a2)
+                                                ? 2
+                                                : 1,
+                                            fillOpacity: countriesToHighlight.includes(feature.properties.name) ||
+                                                countriesToHighlight.includes(feature.properties.iso_a2)
+                                                ? 0.6
+                                                : 0.1,
+                                            fillColor: countriesToHighlight.includes(feature.properties.name) ||
+                                                countriesToHighlight.includes(feature.properties.iso_a2)
+                                                ? "#1DB954"
+                                                : "#000"
+                                        };
+                                    }
+                                }).addTo(map);
+                            })
+                            .catch(error => console.error('Error loading GeoJSON:', error));
+                    },
+                    error: function () {
+                        console.error("Failed to fetch countries for region:", selectedRegions);
+                    }
+                });
+            }
+    
+            // Reset to default
+            function resetToDefault() {
+                // Reset active region buttons
+                regionButtons.forEach(button => button.classList.remove('active'));
+                const globalButton = document.querySelector("[data-region='Global']");
+                globalButton.classList.add('active');
+            
+                // Update button styles
+                updateButtonStyles();
+            
+                // Highlight only the global region
+                highlightCountries(['Global']);
+            
+                // Reset map view to the initial position
+                map.setView([30, 0], 1.5); // Adjust coordinates and zoom level to your initial view
+            
+                // Reset charts and infoboxes
+                renderChart(['Global']);
+                updateDonutChart(['Global']);
+            }
+    
+            // Attach event listeners to region buttons
+            regionButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    if (button.dataset.region === 'Reset') {
+                        resetToDefault();
+                        return;
+                    }
+            
+                    const isActive = button.classList.contains('active');
+                    button.classList.toggle('active', !isActive);
+            
+                    // If "Global" is selected, deselect all other buttons
+                    if (button.dataset.region === 'Global') {
+                        regionButtons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+                    } else {
+                        // Deselect "Global" if any other region is selected
+                        document.querySelector("[data-region='Global']").classList.remove('active');
+                    }
+            
+                    // Check if no buttons are active, if so, select "Global"
+                    const activeButtons = Array.from(regionButtons).filter(btn => btn.classList.contains('active'));
+                    if (activeButtons.length === 0) {
+                        const globalButton = document.querySelector("[data-region='Global']");
+                        globalButton.classList.add('active');
+                    }
+            
+                    updateButtonStyles();
+            
+                    const selectedRegions = Array.from(regionButtons)
+                        .filter(btn => btn.classList.contains('active'))
+                        .map(btn => btn.dataset.region);
+            
+                    highlightCountries(selectedRegions);
+                    renderChart(selectedRegions);
+                    updateDonutChart(selectedRegions);
+                });
+            });
+    
+            // Render chart function
+            function renderChart(selectedRegions = [], selectedCountries = []) {
+                $.ajax({
+                    url: "/get_top_10_data",
+                    type: "GET",
+                    traditional: true,
+                    data: {
+                        "region[]": selectedRegions,
+                        "country[]": selectedCountries
+                    },
+                    success: function (response) {
+                        if (response.names.length === 0) {
+                            // Clear the chart if no data exists
+                            Plotly.purge("top-10-chart");
+                            return;
+                        }
+    
+                        let chartTitle = "Top 10 Songs ";
+                        if (selectedRegions.includes("Global")) {
+                            chartTitle += "Globally";
+                        } else if (selectedRegions.length > 0) {
+                            chartTitle += `in: ${selectedRegions.join(" - ")}`;
+                        } else {
+                            chartTitle += "in the selected region(s)";
+                        }
+    
+                        const ranks = response.names.map((_, i) => `#${i + 1}`);
+                        const data = [{
+                            x: response.scores,
+                            y: response.names,
+                            type: "bar",
+                            orientation: "h",
+                            marker: { color: "#1DB954" },
+                            text: response.names,
+                            textposition: "inside",
+                            insidetextanchor: "start",
+                            textfont: {
+                                size: 16,
+                                color: "black"
+                            },
+                            hoverinfo: "none"
+                        }];
+    
+                        const layout = {
+                            title: {
+                                text: chartTitle,
+                                font: { size: 20, color: "white" },
+                                x: 0.5,
+                                xanchor: "center",
+                                yanchor: "top"
+                            },
+                            xaxis: { showticklabels: false, showgrid: false },
+                            yaxis: {
+                                automargin: true,
+                                autorange: "reversed",
+                                showgrid: false,
+                                tickvals: response.names,
+                                ticktext: ranks,
+                                tickfont: { size: 16, color: "white" },
+                                ticklabelposition: "outside"
+                            },
+                            margin: { l: 40, r: 0, t: 70, b: 0 },
+                            height: 400,
+                            plot_bgcolor: "#000000",
+                            paper_bgcolor: "#000000"
+                        };
+    
+                        Plotly.newPlot("top-10-chart", data, layout);
+    
+                        const topSong = response.names[0];
+                        updateInfoBoxes(topSong, selectedRegions, selectedCountries);
+    
+                        const chartDiv = document.getElementById("top-10-chart");
+                        chartDiv.on("plotly_click", function (eventData) {
+                            const clickedSong = eventData.points[0].y;
+                            updateInfoBoxes(clickedSong, selectedRegions, selectedCountries);
+                        });
+                    },
+                    error: function () {
+                        console.error("Failed to fetch data for the chart.");
+                    }
+                });
+            }
+    
+            // Update info boxes
+            function updateInfoBoxes(songName, selectedRegions) {
+                // If Global is selected, override selectedRegions to include all regions
+                if (selectedRegions.includes("Global")) {
+                    selectedRegions = ["Africa", "Asia", "America", "Europe", "Oceania"]; // List all possible regions
+                }
+            
+                $.ajax({
+                    url: '/get_song_details',
+                    type: 'GET',
+                    traditional: true,
+                    data: { name: songName, 'region[]': selectedRegions },
+                    success: function (response) {
+                        $('#selected-song-name').text(songName);
+                        $('#appearances-count').text(response.appearances);
+                        $('#popularity-value').text(response.popularity);
+                        $('#song-artists').text(response.artists || 'Unknown');
+                        const minutes = Math.floor(response.duration_ms / 60000);
+                        const seconds = ((response.duration_ms % 60000) / 1000).toFixed(0);
+                        $('#song-duration').text(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+                        $('#explicit-value').text(response.explicit ? 'YES' : 'NO');
+                    },
+                    error: function () {
+                        console.error('Failed to update song details.');
+                    }
+                });
+            }
+    
+            // Initialize default state
+            resetToDefault();
+        });
+    </script>
+
+    <script>
+        function updateLineChart(selectedRegions = []) {
+            $.ajax({
+                url: '/get_time_series_data',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ regions: selectedRegions }),
+                success: function (response) {
+                    const lineChartData = [
+                        {
+                            x: response.week,
+                            y: response.valence,
+                            name: 'Valence',
+                            mode: 'lines+markers',
+                            line: { color: 'white' },
+                        },
+                        {
+                            x: response.week,
+                            y: response.danceability,
+                            name: 'Danceability',
+                            mode: 'lines+markers',
+                            line: { color: 'd21c53' },
+                        },
+                        {
+                            x: response.week,
+                            y: response.energy,
+                            name: 'Energy',
+                            mode: 'lines+markers',
+                            line: { color: '1DB954' },
+                        },
+                    ];
+    
+                    const layout = {
+                        title: {
+                            text: 'Key Measurments in Songs',
+                            font: { size: 20, color: '#FFFFFF' },
+                        },
+                        xaxis: {
+                            title: 'Week',
+                            titlefont: { size: 16, color: '#FFFFFF' },
+                            tickfont: { color: '#FFFFFF' },
+                        },
+                        yaxis: {
+                            title: '',
+                            titlefont: { size: 16, color: '#FFFFFF' },
+                            tickfont: { color: '#FFFFFF' },
+                        },
+                        plot_bgcolor: '#000000',
+                        paper_bgcolor: '#000000',
+                        font: { color: '#FFFFFF' },
+                        legend: {
+                            font: { size: 12, color: '#FFFFFF' },
+                        },
+                    };
+    
+                    // Render the chart
+                    Plotly.react('line-chart-content', lineChartData, layout);
+                },
+                error: function () {
+                    console.error('Failed to fetch time series data.');
+                },
+            });
+        }
+    
+        // Attach to region buttons
+        document.querySelectorAll('.region-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const selectedRegions = Array.from(document.querySelectorAll('.region-button.active'))
+                    .map(button => button.dataset.region);
+                updateLineChart(selectedRegions);
+            });
+        });
+    
+        // Initialize the chart for the default region
+        updateLineChart(['Global']);
+    </script>
+
+    <script>
+        function adjustDashboardHeight() {
+            const headerHeight = document.querySelector('header').offsetHeight;
+            const windowHeight = window.innerHeight;
+            const dashboardHeight = windowHeight - headerHeight;
+            document.getElementById('dashboard-content').style.height = dashboardHeight + 'px';
+        }
+    
+        // Adjust dashboard height on initial load and on window resize
+        window.addEventListener('load', adjustDashboardHeight);
+        window.addEventListener('resize', adjustDashboardHeight);
+    </script>
+
+    <script>
+        function updateLayout() {
+            // Adjust dashboard height
+            adjustDashboardHeight();
+    
+            // Update Plotly charts to fit new dimensions
+            Plotly.Plots.resize(document.getElementById('top-10-chart'));
+            Plotly.Plots.resize(document.getElementById('line-chart-content'));
+            Plotly.Plots.resize(document.getElementById('pie-chart-content'));
+        }
+    
+        // Adjust layout on initial load
+        window.addEventListener('load', updateLayout);
+    
+        // Adjust layout every time the window is resized
+        window.addEventListener('resize', function() {
+            updateLayout();
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,258 @@
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Full viewport height */
+    margin: 0;
+    padding: 0;
+    background-color: #000; /* Black background */
+    color: #ffffff; /* White text */
+    font-family: Arial, sans-serif;
+    overflow: hidden; /* Prevents scrolling */
+}
+
+header {
+    padding: 20px 0;
+    background-color: #1DB954; /* Spotify green */
+    text-align: center;
+    /* Static or calculated height, could use calc if header varies */
+    height: 60px; /* Adjust based on actual header height */
+}
+
+header h1 {
+    margin: 10px;
+    font-size: 3rem;
+    color: #000000; /* Black text for contrast */
+}
+
+#update-message {
+    position: absolute; /* Position relative to the header */
+    bottom: 10px; /* Distance from the bottom of the header */
+    right: 20px; /* Distance from the right edge of the header */
+    font-size: 0.9rem; /* Slightly smaller font size */
+    color: #000; /* Black text for contrast */
+    font-style: italic; /* Italicized text for emphasis */
+}
+
+/* Dashboard container */
+#dashboard-content {
+    display: flex;
+    flex-direction: row; /* Horizontal layout for wide screens */
+    padding: 30px;
+    overflow-y: auto; /* Allow vertical scrolling inside the dashboard */
+    box-sizing: border-box; /* Includes padding in the height calculation */
+}
+
+/* Side Section for Info Boxes */
+#info-boxes {
+    flex: 1; /* Take 10% of the parent's width */
+    max-width: 10%; /* Maximum width */
+}
+
+/* Individual info box styling */
+.info-box {
+    background-color: #000; /* Black background */
+    border: 2px solid #1DB954; /* Spotify green border */
+    border-radius: 10px; /* Smooth edges */
+    padding: 10px; /* Inner spacing */
+    text-align: center; /* Center content */
+    box-sizing: border-box; /* Ensure padding is included in the box size */
+    overflow: hidden; /* Prevent content from flowing out of the box */
+}
+
+
+/* Infobox title styling */
+.info-box h2 {
+    font-size: clamp(1rem, 2.5vw, 2.5rem); /* Dynamically resize within limits */
+    color: #FFFFFF; /* Spotify green */
+    margin: 0; /* Remove default margin */
+    white-space: normal; /* Allow text to wrap onto the next line */
+    word-wrap: break-word; /* Break long words if necessary */
+    line-height: 1.2; /* Adjust line height for readability */
+}
+
+/* First info box retains top border-radius */
+.info-box:first-child {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-top: 2px solid #1DB954; /* Keep the top border */
+}
+
+/* Last info box retains bottom border-radius and border */
+.info-box:last-child {
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-bottom: 2px solid #1DB954; /* Ensure the bottom border is visible */
+}
+
+/* Main content area */
+.main-content {
+    flex: 9; /* Take 90% of the parent's width */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top Row */
+.top-row, .bottom-row {
+    flex: 1; /* Each takes half of the parent's height */
+    display: flex;
+}
+
+#chart-container {
+    height: 100%;
+    order: 1;
+    flex: 1; /* Takes 25% of the parent's width */
+    max-width: 25%;
+    padding-left: 2%;
+}
+
+#click-song-message {
+    color: #ffffff; /* Spotify green for the message */
+    font-size: 0.9rem; /* Slightly smaller font size */
+    text-align: left; /* Center align the message */
+    margin-top: 5px; /* Add some space above the message */
+    font-style: italic; /* Italic style to make it distinct */
+}
+
+/* Positivity Pie-Chart Container */
+#positivity-pie-chart {
+    height: 100%;
+    order: 3;
+    flex: 1; /* Takes 20% of the parent's width */
+    max-width: 20%;
+}
+
+#pie-chart-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Prevent overflow */
+}
+
+/* Map container */
+#new-container {
+    order: 2;
+    width: 55%; /* Keep the intended width */
+    height: 100%; /* Ensure it takes the full height of the parent */
+    background-color: #000; /* Black background for the map container */
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#world-map {
+    width: 100%; /* Full width of the container */
+    height: 100%; /* Full height of the container */
+    border-radius: 0px; /* Match the border radius */
+    overflow: hidden; /* Prevent content overflow */
+    position: relative; /* Needed for child elements like labels */
+}
+
+#map-message {
+    position: absolute; /* Position relative to #world-map */
+    top: 0%; /* Position slightly below the top */
+    right: 0%; /* Align to the right side of the map */
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+    color: #FFFFFF; /* White text for visibility */
+    padding: 8px 16px; /* Add padding around the text */
+    border-radius: 5px; /* Rounded corners for smooth design */
+    font-size: 14px; /* Set a readable font size */
+    font-style: italic; /* Italicize the text for emphasis */
+    z-index: 1000; /* Ensure it appears above the map */
+    pointer-events: none; /* Allow interactions with the map beneath */
+    text-align: right; /* Align text to the right inside the box */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); /* Add a slight shadow for better contrast */
+    white-space: nowrap; /* Prevent the text from wrapping */
+}
+
+
+#line-chart-container {
+    width: 100%; /* Full width of the bottom row */
+    padding: 10px; /* Check if padding affects the inner content */
+    box-sizing: border-box; /* Padding and border included in width */
+}
+
+#line-chart-content {
+    width: 100%; /* Full width of the chart area */
+    height: 100%; /* Adjust height for the chart */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #000; /* Black background for the chart */
+    border-radius: 10px;
+}
+
+/* Menu section styles */
+#menu-section {
+    background-color: #111; /* Dark background */
+    padding: 0px 0;
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* Space between dropdowns */
+    border-bottom: 2px solid #1DB954; /* Green border */
+}
+
+#region-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px; /* Space between buttons */
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+.region-button {
+    background-color: #1DB954; /* Spotify green */
+    color: #000; /* Black text */
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background-color 0.3s;
+}
+
+.region-button.active {
+    background-color: #000; /* Black for selected */
+    color: #1DB954; /* Green text */
+    border: 2px solid #1DB954; /* Outline for active */
+}
+
+.region-button:hover {
+    background-color: #111; /* Dark hover effect */
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 800px) {
+    #dashboard-content {
+        flex-direction: column;
+    }
+
+    #info-boxes, #chart-container, #new-container, #positivity-pie-chart {
+        max-width: 100%;
+    }
+
+    .top-row, .bottom-row {
+        flex-direction: column;
+    }
+}
+
+.info-box h2 {
+    font-size: 1.5rem; /* Default font size */
+}
+
+@media (max-width: 800px) {
+    .info-box h2 {
+        font-size: 1.2rem; /* Smaller font for small screens */
+    }
+}
+
+@media (max-width: 500px) {
+    .info-box h2 {
+        font-size: 1rem; /* Even smaller for very small screens */
+    }
+}
