@@ -1,0 +1,7 @@
+Flask==2.3.2
+pandas==2.1.1
+pytz==2023.3
+plotly==5.17.0
+Jinja2==3.1.2
+numpy==1.24.3  # Required for pandas operations
+gunicorn==20.1.0  # If deploying to production
