@@ -1,6 +1,3 @@
-# python3 /Users/ikermontane/Documents/Spotify/flask_website_spot/app.py
-# Ctrl C to stop running
-
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 from datetime import datetime, timedelta
@@ -9,10 +6,10 @@ import pytz
 app = Flask(__name__)
 
 # Load the dataset
-path = "/Users/ikermontane/Documents/Spotify/spot_dash.csv"
+path = " /Users/..individua_path../spot_dash.csv"
 df = pd.read_csv(path)
 
-path1 = "/Users/ikermontane/Documents/Spotify/precomputed_weekly_data.csv"
+path1 = " /Users/..individua_path../precomputed_weekly_data.csv"
 fd = pd.read_csv(path1)
 
 # Extract unique Regions and Countries
